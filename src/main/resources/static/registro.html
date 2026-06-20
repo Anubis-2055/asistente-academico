@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Asistente Virtual Académico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a3a6b, #2196F3);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-primary {
+            background: #2196F3;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+        }
+        .btn-primary:hover {
+            background: #1a3a6b;
+        }
+        #mensaje {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="card p-4">
+    <div class="text-center mb-4">
+        <h4 class="fw-bold">Crear cuenta</h4>
+        <p class="text-muted">Completa tus datos para registrarte</p>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Nombre completo</label>
+        <input type="text" class="form-control" id="nombre" placeholder="Juan Pérez García">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" class="form-control" id="email" placeholder="usuario@uteq.edu.ec">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Contraseña</label>
+        <input type="password" class="form-control" id="contrasena" placeholder="••••••••">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Rol</label>
+        <select class="form-select" id="rol">
+            <option value="">Selecciona tu rol</option>
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+        </select>
+    </div>
+    <div id="mensaje" class="alert" role="alert"></div>
+    <button class="btn btn-primary w-100 mb-3" onclick="registro()">Registrarse</button>
+    <p class="text-center text-muted">¿Ya tienes cuenta? <a href="index.html">Inicia sesión</a></p>
+</div>
+
+<script>
+    async function registro() {
+        const nombre = document.getElementById('nombre').value;
+        const email = document.getElementById('email').value;
+        const contrasena = document.getElementById('contrasena').value;
+        const rol = document.getElementById('rol').value;
+        const mensaje = document.getElementById('mensaje');
+
+        try {
+            const response = await fetch('http://localhost:8080/api/auth/registro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, email, contrasena, rol })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mensaje.style.display = 'block';
+                mensaje.className = 'alert alert-success';
+                mensaje.textContent = 'Usuario registrado exitosamente. Redirigiendo...';
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            } else {
+                mensaje.style.display = 'block';
+                mensaje.className = 'alert alert-danger';
+                mensaje.textContent = data;
+            }
+        } catch (error) {
+            mensaje.style.display = 'block';
+            mensaje.className = 'alert alert-danger';
+            mensaje.textContent = 'Error de conexión con el servidor';
+        }
+    }
+</script>
+</body>
+</html>
