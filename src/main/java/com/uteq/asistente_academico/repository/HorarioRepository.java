@@ -1,0 +1,9 @@
+package com.uteq.asistente_academico.repository;
+
+import com.uteq.asistente_academico.entity.Horario;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface HorarioRepository extends JpaRepository<Horario, Integer> {
+    List<Horario> findByMateria_IdMateria(Integer idMateria);
+}
