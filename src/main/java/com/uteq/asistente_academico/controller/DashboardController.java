@@ -34,9 +34,7 @@ public class DashboardController {
      */
     @GetMapping
     public ResponseEntity<?> obtenerDashboard(Authentication authentication) {
-        String email = authentication.getName();
-        Optional<Usuario> usuarioOpt = usuarioService.buscarPorEmail(email);
-
+        Optional<Usuario> usuarioOpt = resolverUsuarioAutenticado(authentication);
         if (usuarioOpt.isEmpty()) {
             return ResponseEntity.status(404).body("Usuario no encontrado");
         }
@@ -50,5 +48,31 @@ public class DashboardController {
         response.put("resumen", resumen);
         response.put("tareasPendientes", tareasPendientes);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Marca TODOS los avisos pendientes del usuario AUTENTICADO como
+     * leídos (actualización masiva vía fn_marcar_avisos_leidos). Igual que
+     * en obtenerDashboard, el id_usuario se resuelve del JWT, nunca del
+     * cliente.
+     */
+    @PutMapping("/avisos/marcar-leidos")
+    public ResponseEntity<?> marcarAvisosLeidos(Authentication authentication) {
+        Optional<Usuario> usuarioOpt = resolverUsuarioAutenticado(authentication);
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("Usuario no encontrado");
+        }
+
+        Integer idUsuario = usuarioOpt.get().getIdUsuario();
+        Integer avisosMarcados = dashboardRepository.marcarAvisosLeidos(idUsuario);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("avisosMarcados", avisosMarcados);
+        return ResponseEntity.ok(response);
+    }
+
+    private Optional<Usuario> resolverUsuarioAutenticado(Authentication authentication) {
+        String email = authentication.getName();
+        return usuarioService.buscarPorEmail(email);
     }
 }

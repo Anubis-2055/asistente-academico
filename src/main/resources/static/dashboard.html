@@ -68,20 +68,30 @@
             <div class="card p-4 text-center" onclick="window.location.href='chatbot.html'">
                 <div class="card-icon">📝</div>
                 <h6 class="fw-bold">Mis tareas</h6>
-                <p class="text-muted small">Ver tareas pendientes</p>
+                <p class="text-muted small" id="resumenTareas">Ver tareas pendientes</p>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card p-4 text-center" onclick="window.location.href='chatbot.html'">
                 <div class="card-icon">⭐</div>
                 <h6 class="fw-bold">Calificaciones</h6>
-                <p class="text-muted small">Ver mis notas</p>
+                <p class="text-muted small" id="resumenPromedio">Ver mis notas</p>
             </div>
         </div>
     </div>
 
     <div class="card p-4 mb-4">
-        <h6 class="fw-bold mb-3">🔔 Avisos recientes</h6>
+        <h6 class="fw-bold mb-3">📌 Tareas pendientes</h6>
+        <div id="tareasPendientes">
+            <p class="text-muted">Cargando tareas...</p>
+        </div>
+    </div>
+
+    <div class="card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">🔔 Avisos recientes</h6>
+            <button class="btn btn-sm btn-outline-primary" onclick="marcarAvisosLeidos()">Marcar todos como leídos</button>
+        </div>
         <div id="avisos">
             <p class="text-muted">Cargando avisos...</p>
         </div>
@@ -106,9 +116,76 @@
     let saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches';
     document.getElementById('saludo').textContent = `${saludo}, ${nombre}! 👋`;
 
-    document.getElementById('avisos').innerHTML = `
-            <div class="aviso-item">No hay avisos pendientes por el momento.</div>
-        `;
+    async function cargarDashboard() {
+        try {
+            const respuesta = await fetch('/api/dashboard', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (respuesta.status === 401 || respuesta.status === 403) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error('No se pudo cargar el dashboard');
+            }
+
+            const datos = await respuesta.json();
+            const resumen = datos.resumen;
+            const tareas = datos.tareasPendientes;
+
+            document.getElementById('resumenTareas').textContent =
+                `${resumen.tareasPendientes} tarea(s) pendiente(s)`;
+
+            document.getElementById('resumenPromedio').textContent =
+                resumen.promedioGeneral != null
+                    ? `Promedio general: ${resumen.promedioGeneral}`
+                    : 'Aún sin calificaciones';
+
+            if (tareas.length === 0) {
+                document.getElementById('tareasPendientes').innerHTML =
+                    '<p class="text-muted">No tienes tareas pendientes. 🎉</p>';
+            } else {
+                document.getElementById('tareasPendientes').innerHTML = tareas.map(t => `
+                    <div class="aviso-item">
+                        <strong>${t.titulo}</strong> — ${t.materia}<br>
+                        <span class="text-muted small">Entrega: ${t.fechaEntrega} (en ${t.diasRestantes} día(s))</span>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('avisos').innerHTML = resumen.avisosNoLeidos > 0
+                ? `<div class="aviso-item">Tienes <strong>${resumen.avisosNoLeidos}</strong> aviso(s) sin leer.</div>`
+                : '<p class="text-muted">No hay avisos pendientes por el momento.</p>';
+
+        } catch (error) {
+            document.getElementById('tareasPendientes').innerHTML =
+                '<p class="text-danger">No se pudo cargar la información del dashboard.</p>';
+            document.getElementById('avisos').innerHTML =
+                '<p class="text-danger">No se pudo cargar la información del dashboard.</p>';
+        }
+    }
+
+    cargarDashboard();
+
+    async function marcarAvisosLeidos() {
+        try {
+            const respuesta = await fetch('/api/dashboard/avisos/marcar-leidos', {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!respuesta.ok) {
+                throw new Error('No se pudo actualizar los avisos');
+            }
+
+            await cargarDashboard();
+        } catch (error) {
+            alert('No se pudieron marcar los avisos como leídos.');
+        }
+    }
 
     function cerrarSesion() {
         localStorage.clear();
