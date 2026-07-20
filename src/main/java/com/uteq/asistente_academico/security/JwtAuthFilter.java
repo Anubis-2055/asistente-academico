@@ -1,6 +1,7 @@
 package com.uteq.asistente_academico.security;
 
 import com.uteq.asistente_academico.service.AuthService;
+import com.uteq.asistente_academico.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private RedisService redisService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -31,7 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            if (authService.validarToken(token)) {
+            if (authService.validarToken(token) && !redisService.estaEnBlacklist(token)) {
                 String email = authService.obtenerEmailDelToken(token);
 
                 UsernamePasswordAuthenticationToken authentication =

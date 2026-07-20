@@ -1,7 +1,7 @@
 package com.uteq.asistente_academico.controller;
-
 import com.uteq.asistente_academico.entity.Usuario;
 import com.uteq.asistente_academico.service.AuthService;
+import com.uteq.asistente_academico.service.RedisService;
 import com.uteq.asistente_academico.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -55,5 +56,16 @@ public class AuthController {
         response.put("rol", usuario.get().getRol());
         response.put("nombre", usuario.get().getNombre());
         return ResponseEntity.ok(response);
+    }
+    @Autowired
+    private RedisService redisService;
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            redisService.agregarTokenBlacklist(token, 86400000);
+            return ResponseEntity.ok("Sesión cerrada exitosamente");
+        }
+        return ResponseEntity.badRequest().body("Token no proporcionado");
     }
 }
