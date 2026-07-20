@@ -1,26 +1,33 @@
 version: '3.8'
 
+# Imagenes fijadas por digest sha256 (Bloque B.1 - Reproducibilidad).
+# Digests verificados en Docker Hub el 20/07/2026.
 services:
   postgres:
-    image: postgres:16
+    image: postgres@sha256:be01cf82fc7dbba824acf0a82e150b4b360f3ff93c6631d7844af431e841a95c
     container_name: asistente_postgres
     environment:
-      POSTGRES_DB: asistente_academico
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      # Orden de ejecucion controlado por prefijo numerico: schema -> procs -> seed
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/procs/fn_obtener_resumen_academico.sql:/docker-entrypoint-initdb.d/02-fn_obtener_resumen_academico.sql:ro
+      - ./db/procs/fn_listar_tareas_pendientes.sql:/docker-entrypoint-initdb.d/03-fn_listar_tareas_pendientes.sql:ro
+      - ./db/procs/fn_marcar_avisos_leidos.sql:/docker-entrypoint-initdb.d/04-fn_marcar_avisos_leidos.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/05-seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7
+    image: redis@sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954
     container_name: asistente_redis
     ports:
       - "6379:6379"
@@ -36,9 +43,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/asistente_academico
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      # El esquema ya lo aplica Postgres via docker-entrypoint-initdb.d;
+      # Flyway solo valida que coincide, nunca lo crea (ddl-auto=validate).
+      SPRING_FLYWAY_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,12 +58,12 @@ services:
         condition: service_healthy
 
   frontend:
-    image: nginx:alpine
+    image: nginx@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752
     container_name: asistente_frontend
     ports:
       - "80:80"
     volumes:
-      - ./src/main/resources/static:/usr/share/nginx/html
+      - ./src/main/resources/static:/usr/share/nginx/html:ro
     depends_on:
       - backend
 
