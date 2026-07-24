@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "Si usa este software, por favor citelo usando los siguientes metadatos."
+title: "Asistente Virtual Académico con Chatbot Híbrido"
+type: software
+authors:
+  - family-names: "Fajardo Montes"
+    given-names: "Michael Xavier"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+  - family-names: "Castro Palma"
+    given-names: "Justyn Moisés"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+  - family-names: "Rivera Suárez"
+    given-names: "Jonathan Javier"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+version: "0.9.0-rc"
+date-released: "2026-07-24"
+license: "MIT"
+repository-code: "https://github.com/Michael-XFM/asistente-academico"
+keywords:
+  - "gestion academica"
+  - "spring boot"
+  - "postgresql"
+  - "chatbot"
+  - "jwt"
+  - "uteq"
